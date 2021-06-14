@@ -2,45 +2,67 @@ __version__ = '0.1.0'
 
 from pprint import pprint as pp
 
-def _column_width(rows):
-    data_t = list(zip(*rows))
-    widths = list(map(lambda val: len(val), [max(row, key=len) for row in data_t]))
-    return widths
+class FixedWidthFormatter():
+    def __init__(self, schema=None):
+        self._schema = schema
 
-def format_dict(rows, padding=0, schema=None):
-    def extract_headers(dict_of_array):
-        headers = [header for row in dict_of_array for header in row.keys()]
-        headers = list({value: "" for value in headers})
-        return headers
-    headers = extract_headers(rows)
+    def _column_width(self, rows):
+        data_t = list(zip(*rows))
+        widths = list(map(lambda val: len(val), [max(row, key=len) for row in data_t]))
+        return widths
 
-    _rows = []
-    _rows.append(headers)
+    def from_text(self, text):
+        lines = text.rstrip().split("\n")
+        _rows = []
+        for line in lines:
+            vals = list(map(lambda val: val.strip(), line.split(',')))
+            _rows.append(vals)
+        return self.from_list(_rows)
 
-    for row in rows:
-        values = list(map(lambda header: row.get(header, ''), headers))
-        _rows.append(values)
-    new_rows = format_array(_rows, padding=padding)
-    return "\n".join(new_rows) + "\n"
+    def from_dict(self, rows):
+        def extract_headers(dict_of_array):
+            headers = [header for row in dict_of_array for header in row.keys()]
+            headers = list({value: "" for value in headers})
+            return headers
+        headers = extract_headers(rows)
 
-def format_array(rows, padding=0, schema=None):
-    rows = [[str(val) for val in row] for row in rows]
-    widths = _column_width(rows)
-    pp(rows)
-    new_rows = []
-    for row in rows:
-        new_row = []
-        for index, val, width in enumerate(zip(row, widths)):
-            if schema[index] # TODO
-            val = val.ljust(width)
-            new_row.append(val)
-        new_rows.append((' ' * padding + ',' + ' ' * padding).join(new_row))
-    pp(new_rows)
-    return new_rows
+        _rows = []
+        _rows.append(headers)
 
-def format_text(text, padding=0, schema=schema):
-    lines = text.rstrip().split("\n")
-    rows = [line.split(',') for line in lines]
+        for row in rows:
+            values = list(map(lambda header: row.get(header, ''), headers))
+            _rows.append(values)
+        return self.from_list(_rows)
 
-    new_rows = format_array(rows, padding=padding, schema=schema)
-    return "\n".join(new_rows) + "\n"
+    def from_list(self, rows):
+        self._rows = [[str(val) for val in row] for row in rows]
+        return self
+
+    def to_list(self):
+        widths = self._column_width(self._rows)
+        new_rows = []
+        for row in self._rows:
+            new_row = []
+            for index, (val, width) in enumerate(zip(row, widths)):
+                if self._schema:
+                    schema_format = self._schema[index].get('format')
+                    schema_justification = self._schema[index].get('justification')
+                    if schema_format:
+                        val = ("{" + schema_format +"}").format(val)
+                    elif schema_justification:
+                        justification_func = getattr(val, schema_justification)
+                        val = justification_func(width)
+                    else:
+                        val = val.ljust(width)
+                else:
+                    val = val.ljust(width)
+                new_row.append(val)
+            new_rows.append(new_row)
+        return new_rows
+
+    def to_text(self, padding=1, end="\n"):
+        new_rows = []
+        sep = ' ' * padding + ',' + ' ' * padding
+        for row in self.to_list():
+            new_rows.append(sep.join(row))
+        return "\n".join(new_rows) + end
