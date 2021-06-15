@@ -45,7 +45,7 @@ pyfixedwidths
 >>> 
 
 >>> fw = FixedWidthFormatter(schema=schema)
->>> fw.from_dict(listofdict).to_list(padding=0)
+>>> fw.from_dict(listofdict).to_text(padding=0)
 >>> #=>
 >>>     ("name      ,age,hobby,job    \n"
 >>>      "John Doe  ,20 ,swim ,       \n"
