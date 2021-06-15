@@ -1,8 +1,13 @@
 pyfixedwidths
-------------------------
+==========================================================
+Easy way converting from text, list, or dict to text or list with fixed widths.
 
+The Installation
+------------------
 >>> pip install pyfixedwidths
 
+Examples
+-----------
 >>> from pyfixedwidths import FixedWidthFormatter
 >>> text = (
 >>> "1,2,3,4\n"
@@ -82,3 +87,9 @@ pyfixedwidths
 >>>     (   "hobby ,     job , location , name\n"
 >>>         " swim ,         ,          , John Doe\n"
 >>>         "      , teacher ,          , John Smith\n")
+
+
+Requirements
+----------------
+
+- Python 3
