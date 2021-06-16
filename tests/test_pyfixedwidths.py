@@ -171,6 +171,25 @@ def test_to_with_schema2(sample_dict1):
         "John Smith ,   100 ,       ,    teacher\n"
     )
 
+
+def test_to_with_schema3():
+    s = dict(
+            min_width=2,
+            width_calc_func=lambda width: width + -width % 3,
+            justification='ljust',
+        )
+    schema = [ s, s, s, s, s, s, s ]
+    array = [
+        ['1', '12', '123', '1234', '12345', '123456', '1234567'],
+    ]
+    fw = pyfixedwidths.FixedWidthFormatter(schema=schema)
+    fw.from_list(array)
+
+    assert fw.to_list() == [
+        ['1  ', '12 ', '123', '1234  ', '12345 ', '123456', '1234567  '],
+    ]
+
+
 def test_to_with_schema_error(sample_dict1):
     schema = [
         dict(

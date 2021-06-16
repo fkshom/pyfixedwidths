@@ -49,13 +49,19 @@ class FixedWidthFormatter():
         def format_column_value(index, val, default_width):
             width = default_width
             justification = 'ljust'
+            width_calc_func = lambda width: width
             formatting = None
             if self._schema:
                 min_width = self._schema[index].get('min_width', 0)
                 justification = self._schema[index].get('justification', justification)
+                width_calc_func = self._schema[index].get('width_calc_func', width_calc_func)
                 formatting = self._schema[index].get('format', formatting)
 
+                print(width)
+                print(min_width)
                 width = max(int(width), int(min_width))
+                width = width_calc_func(width)
+                print(width)
 
             if formatting:
                 val = ("{" + formatting + "}").format(val)
