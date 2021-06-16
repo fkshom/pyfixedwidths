@@ -1,5 +1,14 @@
 class FixedWidthFormatter():
     def __init__(self, schema=None):
+        if schema:
+            for index in range(len(schema)):
+                schema_formatting = schema[index].get('format')
+                schema_justification = schema[index].get('justification')
+                schema_min_width = schema[index].get('min_width', 0)
+
+            if schema_formatting and (schema_justification or schema_min_width):
+                raise Exception("Can not use justification or min_width, when use formatting.")
+
         self._schema = schema
 
     def _column_width(self, rows):
@@ -37,27 +46,30 @@ class FixedWidthFormatter():
         return self
 
     def to_list(self):
-        def format_column_value(index, val, width):
+        def format_column_value(index, val, default_width):
+            width = default_width
+            justification = 'ljust'
+            formatting = None
             if self._schema:
-                schema_format = self._schema[index].get('format')
-                schema_justification = self._schema[index].get('justification')
-                if schema_format:
-                    val = ("{" + schema_format + "}").format(val)
-                elif schema_justification:
-                    justification_func = getattr(val, schema_justification)
-                    val = justification_func(width)
-                else:
-                    val = val.ljust(width)
+                min_width = self._schema[index].get('min_width', 0)
+                justification = self._schema[index].get('justification', justification)
+                formatting = self._schema[index].get('format', formatting)
+
+                width = max(int(width), int(min_width))
+
+            if formatting:
+                val = ("{" + formatting + "}").format(val)
             else:
-                val = val.ljust(width)
+                justification_func = getattr(val, justification)
+                val = justification_func(width)
             return val
 
         widths = self._column_width(self._rows)
         new_rows = []
         for row in self._rows:
             new_row = []
-            for index, (val, width) in enumerate(zip(row, widths)):
-                val = format_column_value(index, val, width)
+            for index, (val, default_width) in enumerate(zip(row, widths)):
+                val = format_column_value(index, val, default_width)
                 new_row.append(val)
             new_rows.append(new_row)
         return new_rows

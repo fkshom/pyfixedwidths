@@ -139,3 +139,62 @@ def test_to_with_schema(sample_dict1):
         "  John Doe ,    20 , swim  ,   \n"
         "John Smith ,   100 ,       , teacher\n"
     )
+
+
+def test_to_with_schema2(sample_dict1):
+    schema = [
+        dict(
+            justification='rjust'
+        ),
+        dict(
+            format=':>5s'
+        ),
+        dict(
+            min_width=1,
+        ),
+        dict(
+            min_width=10,
+            justification='rjust',
+        )
+    ]
+    fw = pyfixedwidths.FixedWidthFormatter(schema=schema)
+    fw.from_dict(sample_dict1)
+
+    assert fw.to_list() == [
+        ["      name", "  age", "hobby", "       job"],
+        ['  John Doe', "   20", 'swim ', '          '],
+        ['John Smith', "  100", '     ', '   teacher'],
+    ]
+    assert fw.to_text(padding=1) == (
+        "      name ,   age , hobby ,        job\n"
+        "  John Doe ,    20 , swim  ,           \n"
+        "John Smith ,   100 ,       ,    teacher\n"
+    )
+
+def test_to_with_schema_error(sample_dict1):
+    schema = [
+        dict(
+            min_width=1,
+        ),
+    ]
+    fw = pyfixedwidths.FixedWidthFormatter(schema=schema)
+
+    schema = [
+        dict(
+            min_width=1,
+            format=':>5s',
+        ),
+    ]
+    with pytest.raises(Exception):
+        fw = pyfixedwidths.FixedWidthFormatter(schema=schema)
+
+    schema = [
+        dict(
+            justification='rjust',
+            format=':>1s'
+        ),
+    ]
+    with pytest.raises(Exception):
+        fw = pyfixedwidths.FixedWidthFormatter(schema=schema)
+
+
