@@ -111,6 +111,28 @@ def test_to(sample_dict1):
         "John Doe   \t 20  \t swim  \t        \n"
         "John Smith \t 100 \t       \t teacher"
     )
+    assert fw.to_dict() == dict(
+        header=dict(
+            name="name      ",
+            age="age",
+            hobby="hobby",
+            job="job   ",
+        ),
+        body=[
+            dict(
+                name="John Doe  ",
+                age="20",
+                hobby="swim ",
+                job="       ",
+            ),
+            dict(
+                name="John Smith",
+                age="100",
+                hobby="     ",
+                job="teacher",
+            ),
+        ]
+    )
 
 
 def test_to_with_schema(sample_dict1):
