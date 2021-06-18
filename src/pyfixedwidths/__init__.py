@@ -10,6 +10,8 @@ class FixedWidthFormatter():
                 raise Exception("Can not use justification or min_width, when use formatting.")
 
         self._schema = schema
+        self._headers = None
+        self._headers_in_data = None
 
     def _column_width(self, rows):
         data_t = list(zip(*rows))
@@ -32,20 +34,28 @@ class FixedWidthFormatter():
 
         if not headers:
             headers = extract_headers(rows)
+            self._headers = headers
 
         _rows = []
         _rows.append(headers)
+        self._headers_in_data = True
 
         for row in rows:
             values = list(map(lambda header: row.get(header, ''), headers))
             _rows.append(values)
         return self.from_list(_rows)
 
-    def from_list(self, rows):
+    def from_list(self, rows, has_header=False, headers=None):
+        if has_header:
+            self._headers = [str(val).strip() for val in rows[0]]
+            self._headers_in_data = True
+        if headers:
+            self._headers = headers
+
         self._rows = [[str(val) for val in row] for row in rows]
         return self
 
-    def to_list(self):
+    def to_list(self, write_headers=True):
         def format_column_value(index, val, default_width):
             width = default_width
             justification = 'ljust'
@@ -57,11 +67,8 @@ class FixedWidthFormatter():
                 width_calc_func = self._schema[index].get('width_calc_func', width_calc_func)
                 formatting = self._schema[index].get('format', formatting)
 
-                print(width)
-                print(min_width)
                 width = max(int(width), int(min_width))
                 width = width_calc_func(width)
-                print(width)
 
             if formatting:
                 val = ("{" + formatting + "}").format(val)
@@ -70,9 +77,13 @@ class FixedWidthFormatter():
                 val = justification_func(width)
             return val
 
-        widths = self._column_width(self._rows)
+        data = []
+        if write_headers and self._headers and not self._headers_in_data:
+            data.append(self._headers)
+        data.extend(self._rows)
+        widths = self._column_width(data)
         new_rows = []
-        for row in self._rows:
+        for row in data:
             new_row = []
             for index, (val, default_width) in enumerate(zip(row, widths)):
                 val = format_column_value(index, val, default_width)
@@ -86,3 +97,16 @@ class FixedWidthFormatter():
         for row in self.to_list():
             new_rows.append(sep.join(row))
         return "\n".join(new_rows) + end
+
+    def to_dict(self, write_header=True):
+        if not self._headers:
+            raise Exception("Headers not defined.")
+        
+        new_rows = []
+        array = self.to_list()
+
+        if not write_header:
+            array.pop(0)
+        for row in array:
+            new_rows.append(dict(list(zip(self._headers, row))))
+        return new_rows
