@@ -67,14 +67,12 @@ def test_from(sample_text1, sample_dict1, sample_array1):
 
     fw.from_dict(sample_dict1)
     assert fw._rows == [
-        ["name", "age", "hobby", "job"],
         ['John Doe', "20", 'swim', ''],
         ['John Smith', "100", '', 'teacher'],
     ]
 
     fw.from_dict(sample_dict1, headers=["hobby", "job", "location", "name"])
     assert fw._rows == [
-        ["hobby", "job", "location", "name"],
         ['swim', '', '', 'John Doe'],
         ['', 'teacher', '', 'John Smith'],
     ]
