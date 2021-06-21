@@ -297,6 +297,24 @@ def test_to_with_schema3():
     ]
 
 
+def test_to_with_schema4(sample_dict1):
+    schema = dict(
+        name=dict(
+            justification='rjust'
+        ),
+        age=dict(
+            format=':>5s'
+        )
+    )
+    fw = pyfixedwidths.FixedWidthFormatter(schema=schema)
+    fw.from_dict(sample_dict1)
+
+    assert fw.to_list() == [
+        ["      name", "  age", "hobby", "job    "],
+        ['  John Doe', "   20", 'swim ', '       '],
+        ['John Smith', "  100", '     ', 'teacher'],
+    ]
+
 def test_to_with_schema_error(sample_dict1):
     schema = [
         dict(
