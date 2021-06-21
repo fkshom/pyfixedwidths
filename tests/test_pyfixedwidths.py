@@ -37,6 +37,14 @@ def sample_array1():
     ]
     yield array
 
+@pytest.fixture(scope='function', autouse=False)
+def sample_array2():
+    array = [
+        ["name", "age", "hobby", "job"],
+        ['John Doe', "20", 'swim', ''],
+        ['John Smith', "100", '', 'teacher'],
+    ]
+    yield array
 
 def test_usage(sample_dict1):
     fw = pyfixedwidths.FixedWidthFormatter()
@@ -59,14 +67,12 @@ def test_from(sample_text1, sample_dict1, sample_array1):
 
     fw.from_dict(sample_dict1)
     assert fw._rows == [
-        ["name", "age", "hobby", "job"],
         ['John Doe', "20", 'swim', ''],
         ['John Smith', "100", '', 'teacher'],
     ]
 
     fw.from_dict(sample_dict1, headers=["hobby", "job", "location", "name"])
     assert fw._rows == [
-        ["hobby", "job", "location", "name"],
         ['swim', '', '', 'John Doe'],
         ['', 'teacher', '', 'John Smith'],
     ]
@@ -86,6 +92,73 @@ def test_from_text_with_sep(sample_text2):
         ["11", "", "33", "44"],
     ]
 
+def test_to_without_header(sample_array2):
+    fw = pyfixedwidths.FixedWidthFormatter()
+    fw.from_list(sample_array2, has_header=False)
+    assert fw.to_list() == [
+        ["name      ", "age", "hobby", "job    "],
+        ['John Doe  ', "20 ", 'swim ', '       '],
+        ['John Smith', "100", '     ', 'teacher'],
+    ]
+    with pytest.raises(Exception):
+        fw.to_dict(write_header=True)
+    with pytest.raises(Exception):
+        fw.to_dict(write_header=False)
+
+def test_from_list_with_header(sample_array2):
+    fw = pyfixedwidths.FixedWidthFormatter()
+    fw.from_list(sample_array2, has_header=False, headers=['NAME', 'AGE', 'HOBBY', 'JOB'])
+    assert fw.to_list(write_headers=True) == [
+        ['NAME      ', 'AGE', 'HOBBY', 'JOB    '],
+        ["name      ", "age", "hobby", "job    "],
+        ['John Doe  ', "20 ", 'swim ', '       '],
+        ['John Smith', "100", '     ', 'teacher'],
+    ]
+
+
+def test_to2(sample_array2):
+    fw = pyfixedwidths.FixedWidthFormatter()
+    fw.from_list(sample_array2, has_header=True)
+    assert fw.to_list() == [
+        ["name      ", "age", "hobby", "job    "],
+        ['John Doe  ', "20 ", 'swim ', '       '],
+        ['John Smith', "100", '     ', 'teacher'],
+    ]
+    assert fw.to_dict(write_header=True) == [
+        dict(
+            name="name      ",
+            age="age",
+            hobby="hobby",
+            job="job    ",
+        ),
+        dict(
+            name="John Doe  ",
+            age="20 ",
+            hobby="swim ",
+            job="       ",
+        ),
+        dict(
+            name="John Smith",
+            age="100",
+            hobby="     ",
+            job="teacher",
+        ),
+    ]
+    assert fw.to_dict(write_header=False) == [
+        dict(
+            name="John Doe  ",
+            age="20 ",
+            hobby="swim ",
+            job="       ",
+        ),
+        dict(
+            name="John Smith",
+            age="100",
+            hobby="     ",
+            job="teacher",
+        ),
+    ]
+    
 
 def test_to(sample_dict1):
     fw = pyfixedwidths.FixedWidthFormatter()
@@ -111,6 +184,40 @@ def test_to(sample_dict1):
         "John Doe   \t 20  \t swim  \t        \n"
         "John Smith \t 100 \t       \t teacher"
     )
+    assert fw.to_dict(write_header=True) == [
+        dict(
+            name="name      ",
+            age="age",
+            hobby="hobby",
+            job="job    ",
+        ),
+        dict(
+            name="John Doe  ",
+            age="20 ",
+            hobby="swim ",
+            job="       ",
+        ),
+        dict(
+            name="John Smith",
+            age="100",
+            hobby="     ",
+            job="teacher",
+        ),
+    ]
+    assert fw.to_dict(write_header=False) == [
+        dict(
+            name="John Doe  ",
+            age="20 ",
+            hobby="swim ",
+            job="       ",
+        ),
+        dict(
+            name="John Smith",
+            age="100",
+            hobby="     ",
+            job="teacher",
+        ),
+    ]
 
 
 def test_to_with_schema(sample_dict1):
