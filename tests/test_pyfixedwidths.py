@@ -364,3 +364,69 @@ def test_to_with_schema_error(sample_dict1):
     ]
     with pytest.raises(Exception):
         _ = pyfixedwidths.FixedWidthFormatter(schema=schema)
+
+
+def test_format_row(sample_dict1):
+    schema = dict(
+        name=dict(
+            justification='rjust'
+        ),
+        age=dict(
+            format=':>5s'
+        )
+    )
+    fw = pyfixedwidths.FixedWidthFormatter(schema=schema)
+    fw.from_dict(sample_dict1, headers=['name', 'age', 'hobby', 'job'])
+    assert fw.to_dict(write_header=True) == [
+        dict(
+            name="      name",
+            age="  age",
+            hobby="hobby",
+            job="job    ",
+        ),
+        dict(
+            name="  John Doe",
+            age="   20",
+            hobby="swim ",
+            job="       ",
+        ),
+        dict(
+            name="John Smith",
+            age="  100",
+            hobby="     ",
+            job="teacher",
+        ),
+    ]
+
+    additional_rows = [
+        dict(
+            name="John Doe",
+            age=50,
+            hobby="sing",
+            job="driver"
+        ),
+        dict(
+            name="Hans Schmidt",
+            age=50,
+            hobby="tennis",
+            job="scientist"
+        ),
+    ]
+    assert fw.format_rows_to_dict(additional_rows) == [
+        dict(
+            name="  John Doe",
+            age="   50",
+            hobby="sing ",
+            job="driver "
+        ),
+        dict(
+            name="Hans Schmidt",
+            age="   50",
+            hobby="tennis",
+            job="scientist"
+        )]
+
+    assert fw.format_rows_to_list(additional_rows) == [
+        ['  John Doe', "   50", 'sing ', 'driver '],
+        ['Hans Schmidt', "   50", 'tennis', 'scientist'],
+    ]
