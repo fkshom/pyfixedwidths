@@ -37,6 +37,7 @@ def sample_array1():
     ]
     yield array
 
+
 @pytest.fixture(scope='function', autouse=False)
 def sample_array2():
     array = [
@@ -45,6 +46,7 @@ def sample_array2():
         ['John Smith', "100", '', 'teacher'],
     ]
     yield array
+
 
 def test_usage(sample_dict1):
     fw = pyfixedwidths.FixedWidthFormatter()
@@ -59,28 +61,28 @@ def test_usage(sample_dict1):
 
 def test_from(sample_text1, sample_dict1, sample_array1):
     fw = pyfixedwidths.FixedWidthFormatter()
-    fw.from_text(sample_text1)
-    assert fw._rows == [
-        ["1", "2", "3", "4"],
-        ["11", "", "33", "44"],
-    ]
-
     fw.from_dict(sample_dict1)
     assert fw._rows == [
-        ['John Doe', "20", 'swim', ''],
-        ['John Smith', "100", '', 'teacher'],
+        dict(name='John Doe', age=20, hobby='swim'),
+        dict(name='John Smith', age=100, job='teacher'),
     ]
 
     fw.from_dict(sample_dict1, headers=["hobby", "job", "location", "name"])
     assert fw._rows == [
-        ['swim', '', '', 'John Doe'],
-        ['', 'teacher', '', 'John Smith'],
+        dict(name='John Doe', age=20, hobby='swim'),
+        dict(name='John Smith', age=100, job='teacher'),
     ]
 
     fw.from_list(sample_array1)
     assert fw._rows == [
-        ["1", "None", "3", "4"],
-        ["11", "22", "None", "44"],
+        {0: 1, 1: None, 2: 3, 3: 4},
+        {0: 11, 1: 22, 2: None, 3: 44},
+    ]
+
+    fw.from_text(sample_text1)
+    assert fw._rows == [
+        {0: '1', 1: '2', 2: '3', 3: '4'},
+        {0: '11', 1: '', 2: '33', 3: '44'},
     ]
 
 
@@ -88,9 +90,10 @@ def test_from_text_with_sep(sample_text2):
     fw = pyfixedwidths.FixedWidthFormatter()
     fw.from_text(sample_text2, sep="\t")
     assert fw._rows == [
-        ["1", "2", "3", "4"],
-        ["11", "", "33", "44"],
+        {0: '1', 1: '2', 2: '3', 3: '4'},
+        {0: '11', 1: '', 2: '33', 3: '44'},
     ]
+
 
 def test_to_without_header(sample_array2):
     fw = pyfixedwidths.FixedWidthFormatter()
@@ -105,9 +108,11 @@ def test_to_without_header(sample_array2):
     with pytest.raises(Exception):
         fw.to_dict(write_header=False)
 
+
 def test_from_list_with_header(sample_array2):
     fw = pyfixedwidths.FixedWidthFormatter()
-    fw.from_list(sample_array2, has_header=False, headers=['NAME', 'AGE', 'HOBBY', 'JOB'])
+    fw.from_list(sample_array2, has_header=False,
+                 headers=['NAME', 'AGE', 'HOBBY', 'JOB'])
     assert fw.to_list(write_headers=True) == [
         ['NAME      ', 'AGE', 'HOBBY', 'JOB    '],
         ["name      ", "age", "hobby", "job    "],
@@ -158,12 +163,11 @@ def test_to2(sample_array2):
             job="teacher",
         ),
     ]
-    
+
 
 def test_to(sample_dict1):
     fw = pyfixedwidths.FixedWidthFormatter()
-    fw.from_dict(sample_dict1)
-
+    fw.from_dict(sample_dict1, headers=['name', 'age', 'hobby', 'job'])
     assert fw.to_list() == [
         ["name      ", "age", "hobby", "job    "],
         ['John Doe  ', "20 ", 'swim ', '       '],
@@ -221,18 +225,18 @@ def test_to(sample_dict1):
 
 
 def test_to_with_schema(sample_dict1):
-    schema = [
-        dict(
+    schema = dict(
+        name=dict(
             justification='rjust'
         ),
-        dict(
+        age=dict(
             format=':>5s'
         ),
-        dict(),
-        dict(
+        hobby=dict(),
+        job=dict(
             format=':2s'
         )
-    ]
+    )
     fw = pyfixedwidths.FixedWidthFormatter(schema=schema)
     fw.from_dict(sample_dict1)
 
@@ -249,21 +253,21 @@ def test_to_with_schema(sample_dict1):
 
 
 def test_to_with_schema2(sample_dict1):
-    schema = [
-        dict(
+    schema = dict(
+        name=dict(
             justification='rjust'
         ),
-        dict(
+        age=dict(
             format=':>5s'
         ),
-        dict(
+        hobby=dict(
             min_width=1,
         ),
-        dict(
+        job=dict(
             min_width=10,
             justification='rjust',
         )
-    ]
+    )
     fw = pyfixedwidths.FixedWidthFormatter(schema=schema)
     fw.from_dict(sample_dict1)
 
@@ -279,13 +283,32 @@ def test_to_with_schema2(sample_dict1):
     )
 
 
-def test_to_with_schema3():
+def test_to_with_schema3(sample_array2):
+    schema = [
+        dict(justification='rjust'),
+    ]
+    fw = pyfixedwidths.FixedWidthFormatter(schema=schema)
+    fw.from_list(sample_array2, has_header=False)
+    assert fw.to_list() == [
+        ["      name", "age", "hobby", "job    "],
+        ['  John Doe', "20 ", 'swim ', '       '],
+        ['John Smith', "100", '     ', 'teacher'],
+    ]
+    fw.from_list(sample_array2, has_header=True)
+    assert fw.to_list() == [
+        ["name      ", "age", "hobby", "job    "],
+        ['John Doe  ', "20 ", 'swim ', '       '],
+        ['John Smith', "100", '     ', 'teacher'],
+    ]
+
+
+def test_to_with_schema3a():
     s = dict(
-            min_width=2,
-            width_calc_func=lambda width: width + -width % 3,
-            justification='ljust',
-        )
-    schema = [ s, s, s, s, s, s, s ]
+        min_width=2,
+        width_calc_func=lambda width: width + -width % 3,
+        justification='ljust',
+    )
+    schema = [s, s, s, s, s, s, s]
     array = [
         ['1', '12', '123', '1234', '12345', '123456', '1234567'],
     ]
@@ -297,13 +320,32 @@ def test_to_with_schema3():
     ]
 
 
+def test_to_with_schema4(sample_dict1):
+    schema = dict(
+        name=dict(
+            justification='rjust'
+        ),
+        age=dict(
+            format=':>5s'
+        )
+    )
+    fw = pyfixedwidths.FixedWidthFormatter(schema=schema)
+    fw.from_dict(sample_dict1)
+
+    assert fw.to_list() == [
+        ["      name", "  age", "hobby", "job    "],
+        ['  John Doe', "   20", 'swim ', '       '],
+        ['John Smith', "  100", '     ', 'teacher'],
+    ]
+
+
 def test_to_with_schema_error(sample_dict1):
     schema = [
         dict(
             min_width=1,
         ),
     ]
-    fw = pyfixedwidths.FixedWidthFormatter(schema=schema)
+    _ = pyfixedwidths.FixedWidthFormatter(schema=schema)
 
     schema = [
         dict(
@@ -312,7 +354,7 @@ def test_to_with_schema_error(sample_dict1):
         ),
     ]
     with pytest.raises(Exception):
-        fw = pyfixedwidths.FixedWidthFormatter(schema=schema)
+        _ = pyfixedwidths.FixedWidthFormatter(schema=schema)
 
     schema = [
         dict(
@@ -321,6 +363,4 @@ def test_to_with_schema_error(sample_dict1):
         ),
     ]
     with pytest.raises(Exception):
-        fw = pyfixedwidths.FixedWidthFormatter(schema=schema)
-
-
+        _ = pyfixedwidths.FixedWidthFormatter(schema=schema)
